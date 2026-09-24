@@ -1,0 +1,9 @@
+# Attribution
+
+This repository contains modifications of Linux kernel DRM/MIPI-DBI/TinyDRM code.
+
+The original source files retain their SPDX license identifiers and original copyright
+notices. This repository does not claim authorship of the unmodified upstream portions.
+
+The modifications in this repository were made to support and tune the Waveshare 3.5-inch
+ILI9486 display on a Radxa ROCK 4 SE / RK3399 configuration.

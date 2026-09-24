@@ -1,0 +1,26 @@
+# Kernel build artifacts
+*.o
+*.a
+*.mod
+*.mod.c
+*.order
+*.symvers
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editor / OS
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+.DS_Store
+
+# Local build output
+build/
+out/
+
+# Local logs
+*.log

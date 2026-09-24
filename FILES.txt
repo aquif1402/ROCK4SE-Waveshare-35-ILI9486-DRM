@@ -1,0 +1,13 @@
+.gitignore
+LICENSE
+NOTICE
+README.md
+UPSTREAM.md
+config/extlinux.conf
+drivers/drm_mipi_dbi.c
+drivers/drm_mipi_dbi.ko
+drivers/ili9486.c
+drivers/ili9486.ko
+dtb/35b1-mipidbi.dtbo
+dtb/rk3399-rock-4se-base.dtb
+dtb/rk3399-rock-4se-mipidbi.dtb
