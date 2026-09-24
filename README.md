@@ -5,7 +5,11 @@ Hardware-tested Linux DRM/MIPI-DBI driver setup for the **Waveshare 3.5-inch RPi
 This repository contains a working snapshot taken from a live ROCK 4 SE system. The driver code is a modification of the Linux kernel's ILI9486 TinyDRM/MIPI-DBI implementation, adapted for the Waveshare board's SPI-to-16-bit-parallel interface and the tested ROCK 4 SE configuration.
 
 > **Status:** Hardware-tested working backup. This repository targets the exact kernel/configuration described below and should not be treated as a drop-in driver for arbitrary ILI9486 panels or kernel versions.
-
+>
+> 
+> ☕ **Support the project:** [PayPal.Me/AQUIFKHAN](https://www.paypal.com/paypalme/AQUIFKHAN)
+>
+> 
 ## Tested configuration
 
 | Item | Tested value |
@@ -170,9 +174,7 @@ The original source and its copyright/license notices remain in the source files
 
 If this work helped you get the Waveshare 3.5-inch ILI9486 working with DRM/MIPI-DBI on the ROCK 4 SE, you can support continued development:
 
-**Donation:** `ADD-YOUR-DONATION-LINK-HERE`
-
-Replace the placeholder above with your GitHub Sponsors, Ko-fi, Buy Me a Coffee, or other donation page before publishing.
+[![Support via PayPal](https://img.shields.io/badge/Support-PayPal-blue?logo=paypal)](https://www.paypal.com/paypalme/AQUIFKHAN)
 
 ## Contributing
 
