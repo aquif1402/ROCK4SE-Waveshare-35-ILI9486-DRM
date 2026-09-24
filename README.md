@@ -2,6 +2,8 @@
 
 Hardware-tested Linux DRM/MIPI-DBI driver setup for the **Waveshare 3.5-inch RPi LCD (B)** with the **Radxa ROCK 4 SE (RK3399)**.
 
+> **Goal:** Provide a DRM/MIPI-DBI display path for the Waveshare 3.5" ILI9486 on the ROCK 4 SE, allowing Linux graphics applications to use the LCD through the DRM subsystem rather than a userspace framebuffer-copy pipeline.
+
 This repository contains a working snapshot taken from a live ROCK 4 SE system. The driver code is a modification of the Linux kernel's ILI9486 TinyDRM/MIPI-DBI implementation, adapted for the Waveshare board's SPI-to-16-bit-parallel interface and the tested ROCK 4 SE configuration.
 
 > **Status:** Hardware-tested working backup. This repository targets the exact kernel/configuration described below and should not be treated as a drop-in driver for arbitrary ILI9486 panels or kernel versions.
