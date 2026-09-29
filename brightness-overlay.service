@@ -1,0 +1,18 @@
+[Unit]
+Description=Screen Brightness Overlay & Dimmer Service
+After=nodm.service graphical.target
+Wants=nodm.service
+
+[Service]
+Type=simple
+User=radxa
+Group=radxa
+WorkingDirectory=/home/radxa
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/radxa/.Xauthority
+ExecStart=/usr/local/bin/start-brightness-overlay.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical.target

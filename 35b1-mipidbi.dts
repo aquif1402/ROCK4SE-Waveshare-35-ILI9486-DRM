@@ -1,0 +1,75 @@
+/dts-v1/;
+
+/ {
+	fragment@0 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			status = "okay";
+			assigned-clocks = <0xffffffff 0x48>;
+			assigned-clock-parents = <0xffffffff 0x05>;
+			assigned-clock-rates = <64000000>;
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+
+			ili9486@0 {
+				compatible = "waveshare,rpi-lcd-35";
+				reg = <0x00>;
+				spi-max-frequency = <32000000>;
+				rotation = <90>;
+				diff-enable = <1>;
+				diff-tile = <128>;
+				fps=<50>;
+				skip-nth = <1>;
+				reset-gpios = <0xffffffff 0x1d 0x01>;
+				dc-gpios = <0xffffffff 0x1c 0x00>;
+			};
+
+			ads7846@1 {
+				compatible = "ti,ads7846";
+				status = "disabled";
+				reg = <0x01>;
+				id = <0x01>;
+				spi-max-frequency = <0x1e8480>;
+				ti,x-plate-ohms = [00 3c];
+				ti,pressure-max = [00 ff];
+				ti,swap-xy = <0x00>;
+				ti,invert-y = <0x01>;
+				vcc-supply = <0xffffffff>;
+				phandle = <0x02>;
+			};
+		};
+	};
+
+	metadata {
+		title = "3.5inch LCD MIPI-DBI";
+		compatible = "rockchip,rk3399";
+		category = "misc";
+		exclusive = "GPIO1_B0\0GPIO1_A7\0GPIO1_B1\0GPIO1_B2\0GPIO4_D4\0GPIO4_D5";
+		description = "Enable Waveshare 3.5inch RPi LCD (B) with MIPI-DBI ILI9486 DRM driver on SPI1.";
+	};
+
+	fragment@1 {
+		target = <0xffffffff>;
+
+		__overlay__ {
+			pinctrl-0 = <0xffffffff 0xffffffff 0xffffffff 0xffffffff>;
+		};
+	};
+
+	__symbols__ {
+		ili9486 = "/fragment@0/__overlay__/ili9486@0";
+		spidev = "/fragment@0/__overlay__/spidev@1";
+	};
+
+	__fixups__ {
+		spi1 = "/fragment@0:target:0\0/fragment@1:target:0";
+		cru = "/fragment@0/__overlay__:assigned-clocks:0\0/fragment@0/__overlay__:assigned-clock-parents:0";
+		gpio4 = "/fragment@0/__overlay__/ili9486@0:reset-gpios:0\0/fragment@0/__overlay__/ili9486@0:dc-gpios:0";
+		vcc5v0_sys = "/fragment@0/__overlay__/ads7846@1:vcc-supply:0";
+		spi1_clk = "/fragment@1/__overlay__:pinctrl-0:0";
+		spi1_cs0 = "/fragment@1/__overlay__:pinctrl-0:4";
+		spi1_rx = "/fragment@1/__overlay__:pinctrl-0:8";
+		spi1_tx = "/fragment@1/__overlay__:pinctrl-0:12";
+	};
+};

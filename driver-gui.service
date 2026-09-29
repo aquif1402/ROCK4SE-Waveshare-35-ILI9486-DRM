@@ -1,0 +1,14 @@
+[Unit]
+Description=ILI9486 Driver Management GUI Web Server
+After=network.target
+
+[Service]
+Type=simple
+User=radxa
+WorkingDirectory=/home/radxa
+ExecStart=/usr/bin/python3 /home/radxa/driver_gui.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

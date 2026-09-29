@@ -1,19 +1,10 @@
-# Upstream / Original Source
+# Upstream attribution
 
-The driver code in this repository is derived from the Linux kernel's DRM/MIPI-DBI
-and TinyDRM ILI9486 implementation.
+The driver sources in this repository are derived from Linux kernel DRM/MIPI-DBI code, especially the ILI9486 TinyDRM driver and the DRM MIPI-DBI helper.
 
-When publishing this repository, the recommended upstream reference is the Linux kernel
-tree matching the kernel version used to build the included modules.
+Upstream Linux sources:
 
-The most important source files are:
+- https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/tiny/ili9486.c
+- https://github.com/torvalds/linux/blob/master/drivers/gpu/drm/drm_mipi_dbi.c
 
-- `drivers/gpu/drm/tiny/ili9486.c`
-- `drivers/gpu/drm/drm_mipi_dbi.c`
-
-This repository contains a hardware-specific working modification rather than an
-independent implementation of the ILI9486 protocol.
-
-Because the exact upstream revision should match the kernel source used for the
-modules, users should compare these files against the corresponding source in their
-kernel tree when porting the driver to another kernel.
+The source files retain their SPDX identifiers and original copyright notices. The modifications in this repository are hardware/kernel-specific changes tested on the Radxa ROCK 4 SE.

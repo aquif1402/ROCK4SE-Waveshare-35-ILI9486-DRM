@@ -2,9 +2,13 @@
 
 Hardware-tested Linux DRM/MIPI-DBI driver setup for the **Waveshare 3.5-inch RPi LCD (B)** with the **Radxa ROCK 4 SE (RK3399)**.
 
-This repository contains a working snapshot taken from a live ROCK 4 SE system. The driver code is a modification of the Linux kernel's ILI9486 TinyDRM/MIPI-DBI implementation, adapted for the Waveshare board's SPI-to-16-bit-parallel interface and the tested ROCK 4 SE configuration.
+> **Status: BETA / experimental.** This is a hardware-tested working snapshot taken from a live ROCK 4 SE system. It is shared for experimentation, reproduction, and further development. The included kernel modules match the tested kernel `6.1.115-8-rk2501` and are not generic drop-in modules for other kernels. **Do not expect every feature or configuration to work unchanged on another board, LCD revision, kernel, OS image, or SPI setup. Users may need to troubleshoot and adapt the Device Tree, kernel modules, initialization sequence, timings, GPIOs, or surrounding graphics stack.**
 
-> **Status:** Hardware-tested working backup. This repository targets the exact kernel/configuration described below and should not be treated as a drop-in driver for arbitrary ILI9486 panels or kernel versions.
+> **AI-assisted development:** AI tools were used to help analyze, modify, debug, and document parts of this driver and its supporting configuration. The resulting code was tested on the hardware configuration described in this repository, but AI assistance does not imply that the code is universally correct or production-ready.
+
+> **Goal:** Expose the Waveshare ILI9486 through Linux DRM/KMS so graphics applications and compositors can use a modern display path. The LCD driver itself does not provide GPU acceleration; GPU rendering remains the responsibility of the graphics stack/application.
+
+> ☕ **Support the project:** [PayPal.Me/AQUIFKHAN](https://www.paypal.com/paypalme/AQUIFKHAN)
 
 ## Tested configuration
 
@@ -15,186 +19,113 @@ This repository contains a working snapshot taken from a live ROCK 4 SE system. 
 | OS | Debian GNU/Linux 12 (Bookworm) |
 | Kernel | `6.1.115-8-rk2501` |
 | Architecture | arm64 |
-| LCD | Waveshare 3.5inch RPi LCD (B) |
+| LCD | Waveshare 3.5-inch RPi LCD (B) |
 | Controller | ILI9486 |
-| LCD resolution | 480 × 320 |
-| DRM mode | 320 × 480 with rotation for landscape |
-| SPI | 32 MHz tested |
+| Logical display | 480 × 320 landscape |
+| Native panel mode | 320 × 480 |
+| Tested rotation | 90° in the included DTS |
+| Tested SPI rate | 32 MHz maximum tested stable point |
+| SPI signal limit | Above 32 MHz, signal degradation was observed on the tested display/interface; higher rates are not considered supported by this snapshot |
+| Panel interface | Waveshare board with SPI-to-parallel/shift-register interface |
 | Pixel format | RGB565 |
 | Interface | SPI + MIPI-DBI |
 
-## What is modified
+## Hardware / SPI limitation
 
-### `drivers/ili9486.c`
+This driver was tested specifically with the **Waveshare 3.5-inch RPi LCD (B)** using the display board's SPI-to-parallel/shift-register interface. On the tested ROCK 4 SE setup, **32 MHz SPI is the highest rate that was considered stable**. Above 32 MHz, signal degradation was observed and display communication became unreliable.
 
-The ILI9486 driver is based on the Linux kernel TinyDRM ILI9486 driver and has been adapted for the tested Waveshare display.
+Therefore, the repository should not be interpreted as proving that the LCD, its interface hardware, or the driver supports higher SPI frequencies. Cable quality, board revision, power, signal integrity, kernel SPI configuration, and other hardware factors can change the result.
 
-The Waveshare board uses an SPI-to-16-bit-parallel converter. Consequently, command/data transfers need to be handled differently from a conventional direct 8-bit SPI ILI9486 connection.
+## Compatibility / troubleshooting expectation
 
-The tested initialization sequence includes:
+This project is **not a plug-and-play universal ILI9486 driver**. The known-good snapshot is tied to a specific ROCK 4 SE, Waveshare LCD revision, kernel, Device Tree configuration, GPIO wiring, and SPI timing. Other users may need to troubleshoot or modify the configuration before the display works correctly.
 
-- Waveshare-specific hardware reset handling
-- Interface configuration
-- Sleep-out / display-on sequence
-- 18-bit initialization followed by RGB565 operation
-- Display inversion control
-- Power-control settings
-- VCOM configuration
-- Frame-rate configuration
-- Positive/negative gamma tables
-- Rotation/address-mode configuration
+Possible differences include:
 
-### `drivers/drm_mipi_dbi.c`
+- LCD revision or controller configuration
+- SPI signal integrity and maximum reliable clock rate
+- GPIO numbering or reset/DC polarity
+- Device Tree layout and bootloader configuration
+- Kernel version and DRM/MIPI-DBI APIs
+- Panel initialization, gamma, inversion, rotation, and pixel-format settings
+- Other SPI devices sharing the controller
+- DRM/KMS, fbdev emulation, compositor, or application configuration
 
-This is a modified copy of the Linux DRM MIPI-DBI helper used by the tested kernel environment.
+A working result on one system should therefore be treated as a **reference configuration**, not a guarantee for another system.
 
-The working snapshot contains changes related to:
+## Repository contents
 
-- ROCK 4 SE/RK3399 SPI transfer handling
-- 16 KiB transfer chunking
-- Differential display update support present in this working snapshot
-- Display update optimization used during testing
+- `ili9486.c` — Waveshare-specific ILI9486 DRM/TinyDRM driver modification.
+- `drm_mipi_dbi.c` — modified DRM MIPI-DBI helper used by the tested kernel.
+- `35b1-mipidbi.dts` / `.dtbo` — tested Device Tree configuration.
+- `drm_mipi_dbi.ko` and `ili9486.ko` — prebuilt modules for the exact tested kernel.
+- `rk3399-rock-4se-mipidbi.dtb` — merged DTB captured from the tested system.
+- `driver_gui.py` — optional local web management tool.
+- `brightness_overlay.py` / `brightness-cli` — optional X11 software brightness overlay.
+- `ROCK4SE_MIPIDBI_AND_DRIVER_GUI_GUIDE.md` — detailed setup and troubleshooting guide.
 
-Because `drm_mipi_dbi.c` is a kernel DRM subsystem source file, this repository is **kernel-version dependent**. The included `.ko` modules were built for the exact kernel listed above.
+## Important source review notes
 
-## Device tree
+The driver files are intentionally preserved as the **known-working snapshot**. Static review found several areas that should be treated as follow-up engineering work before calling the driver production-ready:
 
-`dtb/35b1-mipidbi.dtbo` is the tested overlay.
+1. The custom `waveshare_command()` differs from upstream by not using the SPI bus lock around the command/data transaction. Upstream's Waveshare path does use `spi_bus_lock()` / `spi_bus_unlock()`. This matters if another SPI device can share the controller.
+2. The differential-update implementation updates its shadow buffer before confirming every SPI write succeeded. A failed transfer can therefore leave the software shadow ahead of the physical LCD.
+3. `skip_nth` blanks pixels in the transmitted buffer; it does **not** reduce the number of SPI bytes transferred. It should not be described as a bandwidth-halving feature.
+4. The differential shadow/staging buffers are global to the module rather than per display device, so the implementation is intended for the tested single-panel configuration.
 
-The tested configuration uses:
+These points are documented rather than silently changed because the included `.ko` files are the exact binaries from the known-working snapshot.
 
-- Compatible: `waveshare,rpi-lcd-35`
-- SPI maximum frequency: 32 MHz
-- Rotation: 270°
-- LCD reset GPIO: GPIO4_D5 / physical pin 22
-- LCD D/C GPIO: GPIO4_D4 / physical pin 18
-- Active-low reset configuration
+## Security note for `driver_gui.py`
 
-The repository also contains:
+The original live-system copy contained commands that supplied a local password to `sudo`. That password is **not included in this public repository**. The packaged GUI uses non-interactive `sudo -n` for privileged actions and binds to `127.0.0.1` by default.
 
-- `rk3399-rock-4se-base.dtb` — stock base DTB used as the reference
-- `rk3399-rock-4se-mipidbi.dtb` — merged DTB from the tested working system
+The GUI can edit driver source, rebuild modules, modify Device Tree files, restart services, and reboot the machine. Treat it as an **administrative tool**, not as a general-purpose public web application. For remote use, prefer an SSH tunnel. If you intentionally expose it on a trusted LAN, set `DRIVER_GUI_HOST=0.0.0.0` and provide your own authentication/firewall controls.
 
-The prebuilt DTBs/DTBO should be considered **tested binaries**, not universal DT files for every ROCK 4 SE software image.
+## Build
 
-## Directory layout
+The included `Makefile` targets the tested kernel by default:
+
+```bash
+make
+```
+
+or explicitly:
+
+```bash
+make KDIR=/lib/modules/$(uname -r)/build
+```
+
+Do not expect the included `.ko` files to load on a different kernel. Their recorded vermagic is:
 
 ```text
-.
-├── README.md
-├── LICENSE
-├── NOTICE
-├── UPSTREAM.md
-├── config/
-│   └── extlinux.conf
-├── drivers/
-│   ├── drm_mipi_dbi.c
-│   ├── drm_mipi_dbi.ko
-│   ├── ili9486.c
-│   └── ili9486.ko
-└── dtb/
-    ├── 35b1-mipidbi.dtbo
-    ├── rk3399-rock-4se-base.dtb
-    └── rk3399-rock-4se-mipidbi.dtb
+6.1.115-8-rk2501 SMP mod_unload modversions aarch64
 ```
 
-## Installation
+## Device Tree
 
-**Back up your current boot configuration and DTB before changing anything.**
+The tested overlay uses:
 
-The safest approach is to use the files as a reference for reproducing the working configuration rather than blindly replacing files on another system.
+- `waveshare,rpi-lcd-35`
+- SPI transfer limit: 32 MHz
+- reset: GPIO4_D5 / physical pin 22
+- D/C: GPIO4_D4 / physical pin 18
+- rotation: 90°
+- RGB565
 
-At a high level:
+The DTS also assigns a 64 MHz SPI clock parent. That is a clock-source setting; the tested SPI transfer rate remains 32 MHz.
 
-1. Verify the running kernel:
+## Attribution
 
-```bash
-uname -a
-uname -r
-```
+`ili9486.c` is derived from the Linux kernel ILI9486 TinyDRM driver, including the upstream Waveshare-specific SPI-to-16-bit-parallel handling. `drm_mipi_dbi.c` is derived from the Linux DRM MIPI-DBI helper and contains ROCK 4 SE-specific modifications.
 
-2. Confirm that the system matches the tested ROCK 4 SE configuration.
+See `UPSTREAM.md` and the SPDX identifiers in the source files for licensing/attribution information.
 
-3. Install/load the matching `drm_mipi_dbi.ko` and `ili9486.ko` modules.
+## Documentation
 
-4. Install the tested Device Tree configuration appropriate for your boot setup.
+See [`ROCK4SE_MIPIDBI_AND_DRIVER_GUI_GUIDE.md`](ROCK4SE_MIPIDBI_AND_DRIVER_GUI_GUIDE.md) for installation, Device Tree setup, GUI usage, brightness overlay, troubleshooting, and tuning.
 
-5. Reboot.
+## Support
 
-6. Verify DRM and SPI/LCD initialization with:
+If this project helped you, you can support continued development:
 
-```bash
-dmesg | grep -Ei 'ili9486|mipi|drm|spi'
-ls -l /dev/dri/
-```
-
-### Important
-
-Do not mix the included `.ko` files with a substantially different kernel. Kernel modules must match the kernel build/API they were compiled against.
-
-## Building from source
-
-The source files in this repository are intended to be used with the corresponding Linux kernel source tree and configuration.
-
-For reproducible builds, use the exact tested kernel:
-
-```text
-Linux 6.1.115-8-rk2501
-```
-
-and the corresponding ROCK 4 SE kernel configuration and headers.
-
-The prebuilt modules are provided for convenience; they are not a replacement for building against your own kernel.
-
-## Performance / transfer-size note
-
-During testing on the ROCK 4 SE, large SPI transfers produced DMA-related failures. The working driver limits individual SPI data transfers to 16 KiB.
-
-This should be understood as a **tested configuration value for the ROCK 4 SE setup**, not as a universal ILI9486 or Linux SPI limitation.
-
-## Known limitations
-
-- The included modules are tied to the tested kernel version.
-- The initialization sequence is tuned for the tested Waveshare 3.5-inch LCD.
-- Other ILI9486 panels may require different initialization, gamma, timing, GPIO, or rotation settings.
-- The prebuilt DTB/DTBO files should not be assumed to work unchanged on other Radxa OS releases.
-- This repository contains a modified DRM MIPI-DBI core helper; future kernel changes may require porting the modifications.
-
-## Original Linux driver / attribution
-
-This project is derived from the Linux kernel DRM TinyDRM/MIPI-DBI ILI9486 implementation.
-
-The original source and its copyright/license notices remain in the source files. See [`UPSTREAM.md`](UPSTREAM.md) for attribution and guidance on comparing this snapshot with the corresponding Linux kernel sources.
-
-## Support the project
-
-If this work helped you get the Waveshare 3.5-inch ILI9486 working with DRM/MIPI-DBI on the ROCK 4 SE, you can support continued development:
-
-**Donation:** `ADD-YOUR-DONATION-LINK-HERE`
-
-Replace the placeholder above with your GitHub Sponsors, Ko-fi, Buy Me a Coffee, or other donation page before publishing.
-
-## Contributing
-
-Issues and pull requests are welcome.
-
-When reporting a problem, include:
-
-```bash
-uname -a
-cat /etc/os-release
-dmesg | grep -Ei 'ili9486|mipi|drm|spi'
-```
-
-and describe:
-
-- ROCK 4 SE model/revision
-- LCD model
-- kernel version
-- SPI frequency
-- DT overlay/configuration
-- whether the stock driver or modified driver was used
-
-## License
-
-The driver sources use the GPL license identifiers included in the original source files. See [`LICENSE`](LICENSE).
+[![Support via PayPal](https://img.shields.io/badge/Support-PayPal-blue?logo=paypal)](https://www.paypal.com/paypalme/AQUIFKHAN)
